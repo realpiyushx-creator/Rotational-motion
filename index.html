@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Rotational Motion | JEE Racing</title>
+    <title>Rotational Motion Master Hub</title>
     <style>
         :root {
-            --bg: #18181b;
-            --panel: rgba(39, 39, 42, 0.95);
-            --primary: #f59e0b; /* Amber */
-            --accent: #ef4444; /* Red */
-            --text: #f4f4f5;
-            --border: rgba(255,255,255,0.1);
+            --bg: #09090b;
+            --card: #18181b;
+            --primary: #8b5cf6; /* Violet */
+            --accent: #06b6d4; /* Cyan */
+            --danger: #ef4444;
+            --text: #e4e4e7;
+            --border: rgba(255, 255, 255, 0.1);
         }
 
         body {
@@ -24,440 +25,588 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        canvas {
-            display: block;
-            width: 100vw;
-            height: 100vh;
+        /* --- MAIN MENU --- */
+        #menu-screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-y: auto;
         }
 
-        /* --- HUD --- */
-        #hud {
-            position: absolute;
-            top: 0;
-            left: 0;
+        .menu-header {
+            text-align: center;
+            margin-bottom: 30px;
+            margin-top: 20px;
+        }
+        .menu-title { font-size: 2rem; font-weight: 900; background: linear-gradient(to right, var(--primary), var(--accent)); -webkit-background-clip: text; color: transparent; }
+        .menu-sub { color: #a1a1aa; font-size: 0.9rem; margin-top: 5px; }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            max-width: 800px;
+            margin: 0 auto;
             width: 100%;
-            height: 100%;
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        .card:active { transform: scale(0.98); background: #27272a; }
+        .card::before {
+            content: ''; position: absolute; top:0; left:0; width:100%; height:4px;
+            background: var(--primary);
+        }
+        .card-icon { font-size: 2.5rem; margin-bottom: 10px; }
+        .card-title { font-weight: 700; margin-bottom: 5px; }
+        .card-desc { font-size: 0.75rem; color: #a1a1aa; line-height: 1.3; }
+
+        /* --- SIMULATION CONTAINER --- */
+        #sim-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; /* Hidden by default */
+        }
+        
+        canvas { display: block; width: 100%; height: 100%; }
+
+        /* --- IN-GAME UI --- */
+        #game-ui {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
         }
 
-        /* --- LEADERBOARD --- */
-        .leaderboard {
-            margin: 20px;
+        .top-bar {
             padding: 15px;
-            background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(8px);
-            border-radius: 16px;
-            border: 1px solid var(--border);
-            pointer-events: auto;
-            max-width: 250px;
-        }
-        .lb-title {
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #a1a1aa;
-            margin-bottom: 10px;
-            font-weight: 700;
-        }
-        .lb-row {
             display: flex;
             justify-content: space-between;
-            font-size: 0.9rem;
-            margin-bottom: 6px;
             align-items: center;
-        }
-        .lb-name { font-weight: 600; display: flex; align-items: center; gap: 8px; }
-        .lb-val { font-family: monospace; color: var(--primary); }
-        .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-
-        /* --- BOTTOM DOCK --- */
-        .dock {
-            background: var(--panel);
-            padding: 15px;
-            padding-bottom: max(15px, env(safe-area-inset-bottom));
-            display: flex;
-            gap: 12px;
             pointer-events: auto;
+            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, transparent 100%);
+        }
+        .back-btn {
+            background: rgba(255,255,255,0.1); border: 1px solid var(--border);
+            color: white; padding: 8px 16px; border-radius: 20px; font-weight: 600; cursor: pointer;
+            backdrop-filter: blur(4px); font-size: 0.8rem;
+        }
+
+        .controls {
+            padding: 20px;
+            background: rgba(24, 24, 27, 0.95);
             border-top: 1px solid var(--border);
-            align-items: center;
-        }
-
-        .btn-icon {
-            width: 48px; height: 48px;
-            background: #3f3f46;
-            border-radius: 12px;
-            border: none;
-            color: white;
-            font-size: 1.4rem;
-            cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .btn-icon.active { background: var(--primary); color: black; }
-
-        .btn-race {
-            flex: 1;
-            height: 48px;
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-            border: none;
-            border-radius: 12px;
-            color: black;
-            font-weight: 800;
-            font-size: 1rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
-        }
-        .btn-race:active { transform: scale(0.98); }
-
-        /* --- SETTINGS MENU --- */
-        .settings {
-            position: absolute;
-            bottom: 0; left: 0; width: 100%;
-            background: #18181b;
-            border-radius: 24px 24px 0 0;
-            padding: 24px;
-            padding-bottom: 100px; /* clear dock */
-            box-sizing: border-box;
-            transform: translateY(110%);
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             pointer-events: auto;
-            border-top: 2px solid var(--primary);
-            box-shadow: 0 -10px 50px rgba(0,0,0,0.8);
-            z-index: 5;
-        }
-        .settings.open { transform: translateY(0); }
-
-        .control-group { margin-bottom: 20px; }
-        .label-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem; color: #a1a1aa; }
-        .val-disp { color: var(--primary); font-weight: bold; font-family: monospace; }
-        
-        input[type="range"] {
-            -webkit-appearance: none; width: 100%; height: 6px; background: #3f3f46; border-radius: 3px; outline: none;
-        }
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none; width: 22px; height: 22px; background: white; border-radius: 50%; cursor: pointer; border: 2px solid var(--primary);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-height: 40vh;
+            overflow-y: auto;
         }
 
-        .hint {
-            margin-top: 15px; padding: 10px; background: rgba(245,158,11,0.1); border-left: 3px solid var(--primary);
-            font-size: 0.8rem; color: #d4d4d8; line-height: 1.4;
+        /* Generic Control Styles */
+        .c-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; color: #d4d4d8; }
+        .c-val { color: var(--accent); font-family: monospace; font-weight: bold; }
+        input[type="range"] { flex: 1; margin-left: 15px; accent-color: var(--primary); }
+        .action-btn {
+            width: 100%; padding: 12px; border: none; border-radius: 8px;
+            background: var(--primary); color: white; font-weight: 700; font-size: 1rem;
+            cursor: pointer;
+        }
+        .action-btn.danger { background: var(--danger); }
+
+        /* Hint Box */
+        .concept-pill {
+            position: absolute; top: 70px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.6); padding: 8px 16px; border-radius: 20px;
+            border: 1px solid var(--accent); color: var(--accent); font-size: 0.8rem;
+            pointer-events: none; text-align: center; width: 80%;
         }
 
     </style>
 </head>
 <body>
 
-<canvas id="sim"></canvas>
+    <div id="menu-screen">
+        <div class="menu-header">
+            <div class="menu-title">ROTATIONAL LAB</div>
+            <div class="menu-sub">JEE Syllabus Interactive Suite</div>
+        </div>
 
-<div id="hud">
-    <div class="leaderboard">
-        <div class="lb-title">Live Race Data</div>
-        <div id="lb-content">
+        <div class="grid">
+            <div class="card" onclick="loadSim('INERTIA')">
+                <div class="card-icon">⚓</div>
+                <div class="card-title">Moment of Inertia</div>
+                <div class="card-desc">Build a dumbbell. Feel how mass distribution ($mr^2$) affects rotation.</div>
             </div>
-    </div>
+            
+            <div class="card" onclick="loadSim('COAM')">
+                <div class="card-icon">⛸️</div>
+                <div class="card-title">Angular Momentum</div>
+                <div class="card-desc">Conservation law ($L = I\omega$). Change shape to change speed.</div>
+            </div>
 
-    <div class="settings" id="settings-menu">
-        <div class="label-row" style="margin-bottom:20px;">
-            <span style="font-size:1.2rem; font-weight:bold; color:white;">Track Conditions</span>
-            <button onclick="toggleSettings()" style="background:none; border:none; color:#666; font-size:1.5rem;">✕</button>
-        </div>
+            <div class="card" onclick="loadSim('TOPPLE')">
+                <div class="card-icon">📐</div>
+                <div class="card-title">Torque & Toppling</div>
+                <div class="card-desc">Push a block. Will it slide or will it topple? ($\tau$ vs $f$).</div>
+            </div>
 
-        <div class="control-group">
-            <div class="label-row"><span>Ramp Angle ($\theta$)</span> <span id="disp-angle" class="val-disp">30°</span></div>
-            <input type="range" min="10" max="60" value="30" oninput="updateParam('angle', this.value)">
-        </div>
-
-        <div class="control-group">
-            <div class="label-row"><span>Gravity ($g$)</span> <span id="disp-g" class="val-disp">9.8 m/s²</span></div>
-            <input type="range" min="1" max="25" value="9.8" step="0.1" oninput="updateParam('g', this.value)">
-        </div>
-        
-        <div class="control-group">
-            <div class="label-row"><span>Radius (Visual Only)</span> <span id="disp-r" class="val-disp">1.0x</span></div>
-            <input type="range" min="0.5" max="1.5" step="0.1" value="1.0" oninput="updateParam('r', this.value)">
-        </div>
-
-        <div class="hint">
-            <strong>JEE Concept:</strong> Acceleration $a = \frac{g\sin\theta}{1 + I/MR^2}$.<br>
-            Notice that Mass and Radius are <strong>not</strong> in the formula! All objects of the same shape accelerate equally regardless of size.
+            <div class="card" onclick="loadSim('RACE')">
+                <div class="card-icon">🏁</div>
+                <div class="card-title">Rolling Race</div>
+                <div class="card-desc">Ring vs Disc vs Sphere. Who wins on an incline?</div>
+            </div>
         </div>
     </div>
 
-    <div class="dock">
-        <button class="btn-icon" onclick="toggleSettings()" id="btn-set">⚙️</button>
-        <button class="btn-icon" onclick="reset()">↺</button>
-        <button class="btn-race" onclick="startRace()">START RACE 🏁</button>
+    <div id="sim-container">
+        <canvas id="canvas"></canvas>
+        <div id="game-ui">
+            <div class="top-bar">
+                <button class="back-btn" onclick="goHome()">← MENU</button>
+                <div style="font-weight:700; font-size:0.9rem;" id="sim-title">TITLE</div>
+            </div>
+            <div class="concept-pill" id="sim-concept">Concept Formula</div>
+            <div class="controls" id="sim-controls">
+                </div>
+        </div>
     </div>
-</div>
-
-<script>
-/**
- * ROTATIONAL RACING ENGINE
- * Simulates pure rolling on an inclined plane.
- */
-
-const canvas = document.getElementById('sim');
+    <script>
+// --- CORE ENGINE ---
+const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-
 let width, height;
-let ramp = { x: 0, y: 0, length: 0, angle: 30 }; // Calculated in resize
-let racers = [];
-let running = false;
-let finished = false;
-let settingsOpen = false;
+let currentSim = null;
+let animId = null;
 
-// Physics Params
-let params = {
-    g: 9.8,
-    angle: 30,
-    radiusScale: 1.0
-};
-
-// Shape Definitions (I = k * MR^2)
-const SHAPES = [
-    { name: 'Solid Sphere', k: 0.4, color: '#10b981' }, // 2/5
-    { name: 'Disc / Cylinder', k: 0.5, color: '#3b82f6' }, // 1/2
-    { name: 'Hollow Sphere', k: 0.66, color: '#f59e0b' }, // 2/3
-    { name: 'Ring / Hoop', k: 1.0, color: '#ef4444' }     // 1
-];
-
-// --- SETUP ---
+// Resize
 function resize() {
     width = canvas.width = window.innerWidth;
     height = canvas.height = window.innerHeight;
-    reset();
+    if(currentSim && currentSim.resize) currentSim.resize();
 }
 window.addEventListener('resize', resize);
+resize();
 
-function toggleSettings() {
-    settingsOpen = !settingsOpen;
-    document.getElementById('settings-menu').classList.toggle('open', settingsOpen);
-    document.getElementById('btn-set').classList.toggle('active', settingsOpen);
+// Navigation
+function loadSim(type) {
+    document.getElementById('menu-screen').style.display = 'none';
+    document.getElementById('sim-container').style.display = 'block';
+    
+    cancelAnimationFrame(animId);
+    
+    // Switcher
+    if (type === 'INERTIA') currentSim = new InertiaSim();
+    if (type === 'COAM') currentSim = new CoamSim();
+    if (type === 'TOPPLE') currentSim = new ToppleSim();
+    if (type === 'RACE') currentSim = new RaceSim();
+
+    document.getElementById('sim-title').innerText = currentSim.title;
+    document.getElementById('sim-concept').innerText = currentSim.concept;
+    currentSim.initUI();
+    currentSim.resize();
+    
+    loop();
 }
 
-function updateParam(key, val) {
-    val = parseFloat(val);
-    if(key === 'angle') { params.angle = val; document.getElementById('disp-angle').innerText = val + '°'; reset(); }
-    if(key === 'g') { params.g = val; document.getElementById('disp-g').innerText = val + ' m/s²'; }
-    if(key === 'r') { 
-        params.radiusScale = val; 
-        document.getElementById('disp-r').innerText = val + 'x';
-        // Update existing radius visual
-        racers.forEach(r => r.radius = 25 * params.radiusScale);
-    }
+function goHome() {
+    cancelAnimationFrame(animId);
+    document.getElementById('sim-container').style.display = 'none';
+    document.getElementById('menu-screen').style.display = 'flex';
+    currentSim = null;
 }
 
-// --- RACER CLASS ---
-class Racer {
-    constructor(def, index) {
-        this.name = def.name;
-        this.k = def.k; // The inertia constant
-        this.color = def.color;
-        
-        // Visuals
-        this.radius = 25 * params.radiusScale;
-        this.index = index; // Lane index
-        
-        // Physics State (Distance along ramp)
-        this.d = 0; 
-        this.v = 0;
-        this.theta = 0; // Rotation angle
-        this.finished = false;
+function loop() {
+    if(!currentSim) return;
+    
+    // Clear
+    ctx.fillStyle = '#09090b';
+    ctx.fillRect(0, 0, width, height);
+    
+    currentSim.update();
+    currentSim.draw();
+    
+    animId = requestAnimationFrame(loop);
+}
+
+
+// ==========================================
+// SIMULATION 1: MOMENT OF INERTIA LAB
+// ==========================================
+class InertiaSim {
+    constructor() {
+        this.title = "Moment of Inertia Builder";
+        this.concept = "I = Σmr². More radius = Harder to spin.";
+        this.masses = []; // {r: distance, m: mass}
+        this.angle = 0;
+        this.omega = 0;
+        this.torque = 0;
     }
 
-    update(dt) {
-        if(this.finished) return;
-
-        // ACCELERATION FORMULA: a = (g * sin(theta)) / (1 + k)
-        const rad = params.angle * (Math.PI / 180);
-        const acc = (params.g * Math.sin(rad)) / (1 + this.k);
-        
-        // Physics Integration scale
-        // We use pixels as meters for calculation, but display differently
-        const SCALE = 20; // 20px = 1m logic
-        
-        this.v += acc * dt;
-        this.d += this.v * dt * SCALE; // Distance in pixels
-
-        // Rotation (Pure Rolling Condition: v = w * r)
-        // dTheta = (v * dt) / r
-        this.theta += (this.v * dt * SCALE) / this.radius;
-
-        // Finish Line Check
-        if (this.d >= ramp.length) {
-            this.d = ramp.length;
-            this.finished = true;
-        }
+    resize() {
+        this.cx = width/2;
+        this.cy = height/2 - 50;
     }
 
-    draw(ctx) {
-        // Calculate screen position based on Ramp Angle
-        const rad = params.angle * (Math.PI / 180);
-        
-        // Start position (Top Left of ramp)
-        const startX = ramp.x;
-        const startY = ramp.y;
+    initUI() {
+        const c = document.getElementById('sim-controls');
+        c.innerHTML = `
+            <div class="c-row">
+                <span>Add Mass Distance ($r$)</span>
+                <input type="range" min="10" max="150" value="80" id="in-r">
+            </div>
+            <button class="action-btn" onclick="currentSim.addMass()">ADD MASS (1kg)</button>
+            <div class="c-row">
+                <span>Applied Torque ($\tau$)</span>
+                <input type="range" min="0" max="50" value="0" oninput="currentSim.torque=parseFloat(this.value)">
+            </div>
+            <button class="action-btn danger" onclick="currentSim.reset()">RESET</button>
+        `;
+    }
 
-        // Lane Offset (spread them perpendicular to movement not possible in 2D side view)
-        // So we just draw them on the same line but slightly offset vertically?
-        // No, let's draw "Ghost" lanes.
-        // Or better: Draw them stacked vertically, but simulating the same ramp.
-        
-        // Let's do distinct "shelves" for each racer so they don't overlap visually
-        // Each shelf is parallel.
-        const shelfGap = 80;
-        const myShelfY = startY + (this.index * shelfGap);
-        const myShelfX = startX; // We can shift X slightly for aesthetic if needed
+    addMass() {
+        const r = parseFloat(document.getElementById('in-r').value);
+        this.masses.push({r: r, m: 1});
+    }
 
-        // Current Pos
-        const px = myShelfX + this.d * Math.cos(rad);
-        const py = myShelfY + this.d * Math.sin(rad);
+    reset() { this.masses = []; this.omega = 0; this.torque = 0; this.angle = 0; }
 
-        // Draw Ramp Line for this racer
-        ctx.strokeStyle = '#333';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(myShelfX, myShelfY + this.radius); // Draw floor below ball
-        const endX = myShelfX + ramp.length * Math.cos(rad);
-        const endY = myShelfY + ramp.length * Math.sin(rad) + this.radius;
-        ctx.lineTo(endX, endY);
-        ctx.stroke();
+    update() {
+        // I = sum(m*r^2) + I_rod
+        // Let rod have basic I
+        let I = 1000; // Base inertia
+        this.masses.forEach(m => I += m.m * m.r * m.r);
 
-        // Draw Racer
+        // alpha = torque / I
+        const alpha = (this.torque * 500) / I; // Scale torque up for visuals
+        this.omega += alpha;
+        this.omega *= 0.98; // Friction
+        this.angle += this.omega * 0.1;
+    }
+
+    draw() {
         ctx.save();
-        ctx.translate(px, py);
-        ctx.rotate(this.theta); // Spin!
+        ctx.translate(this.cx, this.cy);
+        ctx.rotate(this.angle);
 
-        ctx.beginPath();
-        ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+        // Draw Rod
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 10;
+        ctx.beginPath(); ctx.moveTo(-160,0); ctx.lineTo(160,0); ctx.stroke();
         
-        // Fill Styles based on type to show rotation
-        ctx.fillStyle = this.color;
+        // Draw Center
+        ctx.fillStyle = '#8b5cf6';
+        ctx.beginPath(); ctx.arc(0,0,15,0,Math.PI*2); ctx.fill();
+
+        // Draw Masses
+        this.masses.forEach(m => {
+            // Draw symmetric pairs for balance visual
+            [1, -1].forEach(side => {
+                const x = m.r * side;
+                ctx.fillStyle = '#06b6d4';
+                ctx.beginPath(); ctx.arc(x, 0, 10 + m.m*2, 0, Math.PI*2); ctx.fill();
+            });
+        });
+
+        ctx.restore();
+
+        // HUD
+        ctx.fillStyle = 'white';
+        ctx.font = '20px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(`Angular Vel (ω): ${this.omega.toFixed(1)}`, this.cx, this.cy + 150);
         
-        if (this.name.includes('Ring')) {
-            ctx.strokeStyle = this.color;
-            ctx.lineWidth = 4;
-            ctx.stroke();
-            // Spokes
-            ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(this.radius, 0); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-this.radius, 0); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0, this.radius); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0, -this.radius); ctx.stroke();
-        } else if (this.name.includes('Hollow')) {
-             ctx.fillStyle = 'transparent';
-             ctx.strokeStyle = this.color;
-             ctx.lineWidth = this.radius * 0.4; // Thick shell
-             ctx.stroke();
-             // Marker to see rotation
-             ctx.fillStyle = 'white';
-             ctx.beginPath(); ctx.arc(this.radius*0.6, 0, 3, 0, Math.PI*2); ctx.fill();
-        } else {
-            // Solid
-            ctx.fill();
-            // Stripe to see rotation
-            ctx.fillStyle = 'rgba(255,255,255,0.3)';
-            ctx.fillRect(-this.radius, -2, this.radius*2, 4);
-            ctx.fillRect(-2, -this.radius, 4, this.radius*2);
+        let I_val = 1000;
+        this.masses.forEach(m => I_val += m.m * m.r * m.r);
+        ctx.fillStyle = '#a1a1aa';
+        ctx.font = '14px monospace';
+        ctx.fillText(`Total Inertia (I): ${I_val.toFixed(0)}`, this.cx, this.cy + 180);
+    }
+}
+
+
+// ==========================================
+// SIMULATION 2: CONSERVATION OF ANGULAR MOMENTUM
+// ==========================================
+class CoamSim {
+    constructor() {
+        this.title = "Conservation of L";
+        this.concept = "L = Iω = Constant. If I drops, ω rises.";
+        this.armLength = 100; // Controls I
+        this.angle = 0;
+        this.omega = 2; // Initial speed
+        this.L = 0; // Calculated on init
+    }
+
+    resize() { this.cx = width/2; this.cy = height/2 - 50; }
+
+    initUI() {
+        const c = document.getElementById('sim-controls');
+        c.innerHTML = `
+            <div class="c-row">
+                <span>Arm Extension ($r$)</span>
+                <input type="range" min="20" max="150" value="100" oninput="currentSim.updateArm(this.value)">
+            </div>
+            <div style="font-size:0.8rem; color:#666; margin-top:10px;">
+                Pull arms in (reduce r) to see speed increase automatically. No external torque!
+            </div>
+        `;
+        // Calc initial L
+        this.L = this.calcI(100) * this.omega;
+    }
+
+    calcI(r) {
+        // Model: Central body + 2 masses at distance r
+        return 2000 + (2 * 10 * r * r); 
+    }
+
+    updateArm(val) {
+        this.armLength = parseFloat(val);
+        // COAM Logic: w_new = L / I_new
+        const I_new = this.calcI(this.armLength);
+        this.omega = this.L / I_new;
+    }
+
+    update() {
+        this.angle += this.omega * 0.1;
+    }
+
+    draw() {
+        ctx.save();
+        ctx.translate(this.cx, this.cy);
+        ctx.rotate(this.angle);
+
+        // Body
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath(); ctx.arc(0,0,30,0,Math.PI*2); ctx.fill();
+
+        // Arms
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 5;
+        ctx.beginPath(); ctx.moveTo(-this.armLength, 0); ctx.lineTo(this.armLength, 0); ctx.stroke();
+
+        // Hands/Weights
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath(); ctx.arc(-this.armLength, 0, 15, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(this.armLength, 0, 15, 0, Math.PI*2); ctx.fill();
+
+        // Trail effect
+        if(this.omega > 0.5) {
+             ctx.globalAlpha = 0.2;
+             ctx.beginPath(); ctx.arc(0,0, this.armLength, 0, Math.PI*2);
+             ctx.strokeStyle = '#f59e0b'; ctx.stroke();
+             ctx.globalAlpha = 1;
         }
 
         ctx.restore();
 
-        // Label
-        ctx.fillStyle = '#aaa';
-        ctx.font = '10px sans-serif';
-        ctx.fillText(this.name, startX, myShelfY - 10);
+        // Text
+        ctx.fillStyle = 'white'; ctx.textAlign = 'center'; ctx.font = '16px monospace';
+        ctx.fillText(`Rotational Speed (ω): ${this.omega.toFixed(2)}`, this.cx, this.cy + 150);
+        ctx.fillStyle = '#666';
+        ctx.fillText(`Inertia (I): ${this.calcI(this.armLength).toFixed(0)}`, this.cx, this.cy + 175);
+    }
+}
+        // ==========================================
+// SIMULATION 3: TORQUE & TOPPLING
+// ==========================================
+class ToppleSim {
+    constructor() {
+        this.title = "Toppling vs Sliding";
+        this.concept = "Slide if F > μmg. Topple if F*h > mg*b/2.";
+        this.h = 100; // Height of force
+        this.f = 0;   // Applied force
+        this.mu = 0.5;
+        this.state = "STABLE"; // STABLE, SLIDING, TOPPLING
+        
+        // Box dims
+        this.bw = 100;
+        this.bh = 150;
+        this.mass = 10;
+        this.boxX = 0;
+        this.tilt = 0;
+    }
+
+    resize() { this.cx = width/2; this.cy = height - 150; this.boxX = this.cx; }
+
+    initUI() {
+        const c = document.getElementById('sim-controls');
+        c.innerHTML = `
+            <div class="c-row">
+                <span>Push Height ($h$)</span>
+                <input type="range" min="10" max="150" value="100" oninput="currentSim.h=parseFloat(this.value)">
+            </div>
+            <div class="c-row">
+                <span>Friction Coeff ($\mu$)</span>
+                <input type="range" min="0.1" max="1.0" step="0.1" value="0.5" oninput="currentSim.mu=parseFloat(this.value)">
+            </div>
+            <div class="c-row">
+                <span>Apply Force ($F$)</span>
+                <input type="range" min="0" max="150" value="0" oninput="currentSim.f=parseFloat(this.value)">
+            </div>
+            <button class="action-btn danger" onclick="currentSim.reset()">RESET BOX</button>
+        `;
+    }
+
+    reset() { this.f = 0; this.state="STABLE"; this.boxX=this.cx; this.tilt=0; document.querySelectorAll('input')[2].value=0; }
+
+    update() {
+        const g = 10;
+        const mg = this.mass * g;
+        const f_max = this.mu * mg;
+        const torque_push = this.f * this.h;
+        const torque_restore = mg * (this.bw / 2);
+
+        // Logic
+        if (this.state !== "TOPPLING") {
+            if (torque_push > torque_restore) {
+                this.state = "TOPPLING";
+            } else if (this.f > f_max) {
+                this.state = "SLIDING";
+                this.boxX += 2; // Move box
+            } else {
+                this.state = "STABLE";
+            }
+        }
+
+        if(this.state === "TOPPLING") {
+            if(this.tilt < Math.PI/2) this.tilt += 0.05;
+        } else {
+            this.tilt = 0;
+        }
+        
+        // Loop box
+        if(this.boxX > width + 50) this.boxX = -50;
+    }
+
+    draw() {
+        // Floor
+        ctx.strokeStyle = '#555'; ctx.beginPath(); ctx.moveTo(0, this.cy); ctx.lineTo(width, this.cy); ctx.stroke();
+
+        ctx.save();
+        // Pivot point for toppling is bottom right corner
+        const pivotX = this.boxX + this.bw/2;
+        const pivotY = this.cy;
+        
+        ctx.translate(pivotX, pivotY);
+        ctx.rotate(this.tilt);
+        ctx.translate(-pivotX, -pivotY);
+
+        // Box
+        ctx.fillStyle = this.state === "STABLE" ? '#3b82f6' : (this.state === "SLIDING" ? '#f59e0b' : '#ef4444');
+        ctx.fillRect(this.boxX - this.bw/2, this.cy - this.bh, this.bw, this.bh);
+        
+        // Force Vector
+        const forceY = this.cy - this.h;
+        const forceX = this.boxX - this.bw/2;
+        
+        if(this.f > 0) {
+            ctx.strokeStyle = 'white'; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(forceX - 10, forceY); ctx.lineTo(forceX - 10 - (this.f), forceY); ctx.stroke();
+            // Arrowhead
+            ctx.beginPath(); ctx.arc(forceX - 10, forceY, 3, 0, Math.PI*2); ctx.fill();
+        }
+
+        ctx.restore();
+
+        // Status Text
+        ctx.font = 'bold 20px sans-serif'; ctx.textAlign='center'; ctx.fillStyle = 'white';
+        ctx.fillText(`STATUS: ${this.state}`, width/2, this.cy - 200);
+        
+        // Debug
+        ctx.font = '12px monospace'; ctx.fillStyle='#aaa';
+        ctx.fillText(`Torque(Push): ${(this.f*this.h).toFixed(0)} | Torque(Grav): ${(this.mass*10*this.bw/2).toFixed(0)}`, width/2, this.cy - 180);
     }
 }
 
-// --- MAIN LOOP ---
 
-function reset() {
-    running = false;
-    finished = false;
-    
-    // Define ramp geometry
-    const padding = 50;
-    const laneHeight = 80;
-    const totalH = laneHeight * 4;
-    
-    // Start top left
-    ramp.x = padding;
-    ramp.y = (height - totalH) / 2; // Center vertically
-    // Length depends on width and angle, keep it within screen
-    // cos(angle) * len < width - padding*2
-    const rad = params.angle * (Math.PI/180);
-    const maxLen = (width - padding*2) / Math.cos(rad);
-    ramp.length = Math.min(maxLen, 800);
+// ==========================================
+// SIMULATION 4: ROLLING RACE (Simplified)
+// ==========================================
+class RaceSim {
+    constructor() {
+        this.title = "Rolling on Incline";
+        this.concept = "a = gsinθ / (1 + I/MR²). Shape decides winner.";
+        this.racers = [
+            {n: 'Ring', k: 1.0, c: '#ef4444', x: 0},
+            {n: 'Disc', k: 0.5, c: '#3b82f6', x: 0},
+            {n: 'Sphere', k: 0.4, c: '#10b981', x: 0}
+        ];
+        this.running = false;
+        this.time = 0;
+    }
 
-    // Initialize Racers
-    racers = SHAPES.map((def, i) => new Racer(def, i));
-    updateLeaderboard();
-}
+    resize() { this.cx = 50; this.cy = 100; }
 
-function startRace() {
-    if(running) return;
-    running = true;
-    if(settingsOpen) toggleSettings();
-}
+    initUI() {
+        const c = document.getElementById('sim-controls');
+        c.innerHTML = `
+            <div style="font-size:0.85rem; color:#aaa; margin-bottom:10px;">
+                I_Ring = MR² (k=1) <br> I_Disc = 0.5MR² (k=0.5) <br> I_Sphere = 0.4MR² (k=0.4)
+            </div>
+            <button class="action-btn" onclick="currentSim.start()">START RACE</button>
+            <button class="action-btn danger" onclick="currentSim.reset()" style="margin-top:10px;">RESET</button>
+        `;
+    }
 
-function updateLeaderboard() {
-    const html = racers
-        .sort((a, b) => b.d - a.d) // Sort by distance traveled
-        .map((r, i) => {
-            // Calculate real acceleration for display
-            const rad = params.angle * (Math.PI / 180);
-            const a = (params.g * Math.sin(rad)) / (1 + r.k);
-            
-            return `
-            <div class="lb-row">
-                <div class="lb-name">
-                    <span style="color:#666">${i+1}.</span>
-                    <span class="dot" style="background:${r.color}"></span>
-                    ${r.name}
-                </div>
-                <div class="lb-val">${a.toFixed(1)} m/s²</div>
-            </div>`;
-        }).join('');
-    
-    document.getElementById('lb-content').innerHTML = html;
-}
+    start() { this.running = true; }
+    reset() { this.running = false; this.time = 0; this.racers.forEach(r => r.x = 0); }
 
-let lastTime = 0;
-function loop(timestamp) {
-    const dt = Math.min((timestamp - lastTime) / 1000, 0.1); // Cap dt
-    lastTime = timestamp;
-
-    ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--bg');
-    ctx.fillRect(0, 0, width, height);
-
-    // Background Grid Hint
-    ctx.strokeStyle = '#222';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    for(let i=0; i<width; i+=50) { ctx.moveTo(i,0); ctx.lineTo(i,height); }
-    ctx.stroke();
-
-    if (running) {
-        let allDone = true;
-        racers.forEach(r => {
-            r.update(dt);
-            if (!r.finished) allDone = false;
+    update() {
+        if(!this.running) return;
+        this.time += 0.016;
+        
+        // a prop to 1/(1+k)
+        this.racers.forEach(r => {
+            const acc = 200 / (1 + r.k); // Arbitrary scale
+            r.x = 0.5 * acc * this.time * this.time;
         });
-        if(allDone) running = false;
-        updateLeaderboard();
     }
 
-    racers.forEach(r => r.draw(ctx));
+    draw() {
+        const laneH = 80;
+        this.racers.forEach((r, i) => {
+            const y = 150 + i * laneH;
+            
+            // Track
+            ctx.strokeStyle = '#333'; ctx.beginPath(); ctx.moveTo(50, y+20); ctx.lineTo(width-50, y+20); ctx.stroke();
+            
+            // Ball
+            const bx = 50 + r.x;
+            ctx.fillStyle = r.c;
+            ctx.beginPath(); ctx.arc(bx, y, 15, 0, Math.PI*2); ctx.fill();
+            
+            // Rolling Marker
+            ctx.strokeStyle = 'white'; ctx.lineWidth=2;
+            const angle = bx / 15;
+            ctx.beginPath(); ctx.moveTo(bx, y); 
+            ctx.lineTo(bx + Math.cos(angle)*15, y + Math.sin(angle)*15); ctx.stroke();
 
-    requestAnimationFrame(loop);
+            // Label
+            ctx.fillStyle = '#aaa'; ctx.font='12px sans-serif'; ctx.textAlign='left';
+            ctx.fillText(`${r.n} (k=${r.k})`, 50, y - 25);
+            
+            if(bx > width-50) this.running = false;
+        });
+    }
 }
-
-// Boot
-resize();
-requestAnimationFrame(loop);
 
 </script>
 </body>
